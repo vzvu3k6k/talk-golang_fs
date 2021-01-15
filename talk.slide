@@ -1,0 +1,82 @@
+# Go 1.16で導入予定のio/fsを使ってみる
+
+2021-01-16
+Kyoto.go #16
+yebis0942
+
+## `io/fs`
+
+[https://tip.golang.org/doc/go1.16#fs](https://tip.golang.org/doc/go1.16#fs)
+
+- `fs.FS`を中心としたインターフェース群
+- 階層構造のファイルシステムを表現するもの
+    - 読み取り専用
+- `http.Handler`などの標準ライブラリからも使えるようになる
+
+## `fs.FS`を見てみる
+
+[https://tip.golang.org/pkg/io/fs/#FS](https://tip.golang.org/pkg/io/fs/#FS)
+
+シンプル！
+
+## 使ってみる
+
+- [https://github.com/vzvu3k6k/txtarfs](https://github.com/vzvu3k6k/txtarfs)
+    - 複数のファイルを1ファイルにまとめる[txtar](https://qiita.com/tenntenn/items/4c2d33f795aa6e23e188)形式
+    - を受け取って`fs.FS`を実装した構造体を返す
+- [https://github.com/vzvu3k6k/txtarfs/blob/example/txtarfs_test.go](https://github.com/vzvu3k6k/txtarfs/blob/example/txtarfs_test.go)
+
+## 内部実装
+
+[https://github.com/vzvu3k6k/txtarfs/blob/example/txtarfs.go](https://github.com/vzvu3k6k/txtarfs/blob/example/txtarfs.go)
+
+- `fs.FS`の`Open()`が`fs.File`を返す
+- `fs.File`の`Read()`は`[]byte`を返す
+
+---
+
+- `fs.File`や`fs.FileInfo`の実装はやや面倒。
+- `fs.File`の`Read()`は`bytes.NewBuffer`に投げてしまうのが楽。
+
+## テスト
+
+[https://tip.golang.org/pkg/testing/fstest/](https://tip.golang.org/pkg/testing/fstest/)
+
+- `TestFS`: `fs.FS`の実装を作る人のためのテスト関数
+- `MapFS`: `fs.FS`を受け取る実装を作る人のためのシンプルな`fs.FS`実装
+
+## 実用例
+
+- [github.com/benbjohnson/hashfs](https://github.com/benbjohnson/hashfs)
+    - 他の`fs.FS`をラップして[フィンガープリント](https://railsguides.jp/asset_pipeline.html#%E3%83%95%E3%82%A3%E3%83%B3%E3%82%AC%E3%83%BC%E3%83%97%E3%83%AA%E3%83%B3%E3%83%88%E3%81%A8%E6%B3%A8%E6%84%8F%E7%82%B9)の機能を提供する
+    - ファイル名の末尾にハッシュ値をつける
+    - →ファイルの内容が変わるとファイル名も変わるので、古いキャッシュを引かずに済む
+- [embed](https://tip.golang.org/pkg/embed/)
+- [github.com/jhchabran/gistfs](https://github.com/jhchabran/gistfs)
+    - [reddit](https://www.reddit.com/r/golang/comments/kwm5x9/a_github_gist_implementation_of_the_upcoming_iofs/)で盛り上がっている
+    - <q cite="https://www.reddit.com/r/golang/comments/kwm5x9/a_github_gist_implementation_of_the_upcoming_iofs/gj5xtk7">I can't wait to see all the crazy stuff people will do with io/fs and go:embed!</q>
+
+## 参考になりそうな実装
+
+- [github.com/psanford/memfs](https://github.com/psanford/memfs): インメモリのファイルシステム
+- [embed](https://tip.golang.org/pkg/embed/)
+
+## まとめ
+
+- Go 1.16で`io/fs`が導入される見込み
+- 読み取り専用の階層構造を持つファイルシステムを表すインターフェースが提供される
+- すでにサードパーティで実用性のあるライブラリが出てきている
+    - おもしろライブラリも出てきている
+
+## 参考リンク
+
+一次情報
+
+- [https://tip.golang.org/doc/go1.16#fs](https://tip.golang.org/doc/go1.16#fs)
+- [https://go.googlesource.com/proposal/+/master/design/draft-iofs.md](https://go.googlesource.com/proposal/+/master/design/draft-iofs.md)
+
+解説記事
+
+- [次期 Go 言語で導入される（かもしれない） io/fs パッケージについて予習する | text.Baldanders.info](https://text.baldanders.info/golang/file-system-interface-in-go-2/ "次期 Go 言語で導入される（かもしれない） io/fs パッケージについて予習する | text.Baldanders.info")
+- [Draft designを読む](https://gist.github.com/tenntenn/fe8995c347a5e1000832d3c6942f1fbe "Draft designを読む")
+- [Big Sky :: Go に go:embed が入った。](https://mattn.kaoriya.net/software/lang/go/20201030092005.htm "Big Sky :: Go に go:embed が入った。")
